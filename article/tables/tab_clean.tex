@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\small
+\caption{Test performance of all classical models trained on clean labels (positive class: pneumonia; 95\% bootstrap confidence interval for F1). Best value per column in bold.}
+\label{tab:clean}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccccccc}
+\toprule
+Model & Acc. & Prec. & Recall & Spec. & F1 [95\% CI] & ROC-AUC & AP \\
+\midrule
+LogReg-SGA (ours) & 0.851 & 0.814 & 0.987 & 0.624 & 0.892 [0.870, 0.913] & 0.927 & 0.926 \\
+LogReg & 0.837 & 0.800 & 0.985 & 0.590 & 0.883 [0.859, 0.905] & 0.923 & 0.924 \\
+Gaussian NB & 0.833 & \textbf{0.847} & 0.895 & \textbf{0.731} & 0.870 [0.846, 0.894] & 0.834 & 0.842 \\
+KNN & 0.830 & 0.793 & 0.985 & 0.573 & 0.879 [0.856, 0.902] & 0.904 & 0.904 \\
+Decision tree & 0.804 & 0.790 & 0.936 & 0.585 & 0.857 [0.831, 0.881] & 0.747 & 0.775 \\
+AdaBoost & 0.840 & 0.806 & 0.979 & 0.607 & 0.884 [0.861, 0.906] & 0.931 & 0.934 \\
+Gradient boosting & 0.830 & 0.800 & 0.972 & 0.594 & 0.877 [0.853, 0.900] & 0.938 & 0.953 \\
+Linear SVM & \textbf{0.864} & 0.831 & 0.982 & 0.667 & 0.900 [0.880, 0.920] & 0.925 & 0.921 \\
+RBF-SVM & 0.857 & 0.818 & \textbf{0.992} & 0.632 & 0.897 [0.874, 0.919] & \textbf{0.947} & \textbf{0.961} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

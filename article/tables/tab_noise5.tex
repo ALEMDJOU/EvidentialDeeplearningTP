@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\small
+\caption{Robustness to flipping 5\% of the minority-class (normal) training labels. \emph{baseline}: hyper-parameters selected on validation; \emph{robust}: stronger regularisation; \emph{recalibrated}: baseline with the decision threshold re-selected on the clean validation set. Clean: single run; noisy: mean$\pm$std over 10 random flips. $\Delta$ = noisy $-$ clean (the test set is always clean).}
+\label{tab:noise5}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{llccccccccc}
+\toprule
+Model & Config. & Acc. clean & Acc. noisy & $\Delta$Acc. & Spec. clean & Spec. noisy & $\Delta$Spec. & AUC clean & AUC noisy & $\Delta$AUC \\
+\midrule
+Gradient boosting & baseline & 0.830 & 0.825$\pm$0.005 & -0.006 & 0.594 & 0.560$\pm$0.013 & -0.034 & 0.938 & 0.940$\pm$0.003 & +0.002 \\
+Gradient boosting & recalibrated & 0.838 & 0.867$\pm$0.011 & +0.029 & 0.624 & 0.721$\pm$0.056 & +0.097 & 0.938 & 0.940$\pm$0.003 & +0.002 \\
+Gradient boosting & robust & 0.824 & 0.806$\pm$0.006 & -0.018 & 0.573 & 0.521$\pm$0.016 & -0.052 & 0.932 & 0.930$\pm$0.002 & -0.001 \\
+RBF-SVM & baseline & 0.857 & 0.849$\pm$0.004 & -0.008 & 0.632 & 0.609$\pm$0.011 & -0.023 & 0.947 & 0.947$\pm$0.002 & -0.001 \\
+RBF-SVM & recalibrated & 0.872 & 0.875$\pm$0.016 & +0.004 & 0.671 & 0.692$\pm$0.055 & +0.021 & 0.947 & 0.947$\pm$0.002 & -0.001 \\
+RBF-SVM & robust & 0.841 & 0.833$\pm$0.004 & -0.008 & 0.598 & 0.570$\pm$0.011 & -0.029 & 0.946 & 0.946$\pm$0.001 & -0.000 \\
+LogReg & baseline & 0.837 & 0.826$\pm$0.003 & -0.011 & 0.590 & 0.550$\pm$0.008 & -0.039 & 0.923 & 0.923$\pm$0.001 & -0.000 \\
+LogReg & recalibrated & 0.865 & 0.869$\pm$0.004 & +0.003 & 0.722 & 0.725$\pm$0.015 & +0.003 & 0.923 & 0.923$\pm$0.001 & -0.000 \\
+LogReg & robust & 0.822 & 0.802$\pm$0.002 & -0.020 & 0.551 & 0.494$\pm$0.004 & -0.058 & 0.920 & 0.919$\pm$0.000 & -0.000 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

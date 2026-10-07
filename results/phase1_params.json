@@ -1,0 +1,6 @@
+{
+  "sga_alpha0": 0.01,
+  "sga_lambda": 0.01,
+  "logreg_C": 0.001,
+  "knn_K": 7
+}

@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------- Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# ---------------------------------------------------------------- Données
+# MedMNIST est re-téléchargé automatiquement par tp4_utils.load_medmnist()
+data/
+*.npz
+
+# ---------------------------------------------------------------- MLflow
+# Régénérés en exécutant TP4_Robust_Classification_Part3.ipynb
+mlflow.db
+mlruns/
+mlartifacts/
+
+# ---------------------------------------------------------------- PyTorch
+*.pt
+*.pth
+*.ckpt
+
+# ---------------------------------------------------------------- LaTeX (compilé sur Overleaf)
+article/*.aux
+article/*.log
+article/*.out
+article/*.bbl
+article/*.blg
+article/*.toc
+article/*.fls
+article/*.fdb_latexmk
+article/*.synctex.gz
+article/*.pdf
+
+# ---------------------------------------------------------------- IDE / outils / OS
+.vscode/
+.idea/
+.qodo/
+.DS_Store
+Thumbs.db
+desktop.ini

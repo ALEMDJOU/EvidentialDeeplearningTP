@@ -1,0 +1,10 @@
+{
+  "tree_depth": 13,
+  "ada_n_estimators": 186,
+  "hgb_learning_rate": 0.1,
+  "hgb_max_leaf_nodes": 15,
+  "hgb_max_iter": 54,
+  "linsvm_C": 0.0031622776601683794,
+  "rbf_C": 3,
+  "rbf_gamma": 0.001
+}
