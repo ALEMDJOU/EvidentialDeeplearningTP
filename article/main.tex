@@ -58,10 +58,10 @@ Classical Baselines versus Evidential Uncertainty\\ for Pneumonia Detection with
 \begin{abstract}
 Medical image labels are often uncertain, yet classical classifiers treat them as exact. We study this gap on
 PneumoniaMNIST. Nine classical models, including a from-scratch logistic regression trained by stochastic gradient
-ascent, boosted trees and kernel SVMs, are tuned on validation data and stressed by flipping 0--40\% of the
+ascent, boosted trees and kernel SVMs, are tuned on validation data and stressed by flipping 0 to 40\% of the
 minority-class training labels; an evidential CNN is compared with an identical softmax CNN. Three findings emerge.
-First, asymmetric label noise mainly shifts the decision threshold: specificity collapses from about 0.6 to 0.2--0.3
-while ROC-AUC stays within 0.92--0.95. Second, stronger regularisation consistently hurts, whereas re-selecting the
+First, asymmetric label noise mainly shifts the decision threshold: specificity collapses from about 0.6 to between 0.2 and 0.3
+while ROC-AUC stays between 0.92 and 0.95. Second, stronger regularisation consistently hurts, whereas re-selecting the
 threshold on a small clean set keeps accuracy between 0.85 and 0.89 up to 40\% noise. Third, the evidential model
 matches softmax accuracy and is better calibrated under noise (expected calibration error 0.13 versus 0.21 at 20\%
 noise), but its uncertainty does not reliably improve out-of-distribution detection. All results are reproducible
@@ -69,7 +69,7 @@ from public notebooks and MLflow runs.
 \end{abstract}
 
 \noindent\textbf{Keywords:} medical image classification $\cdot$ label noise $\cdot$ uncertain labels $\cdot$
-evidential deep learning $\cdot$ Dempster--Shafer theory $\cdot$ calibration $\cdot$ precision--recall $\cdot$ MLOps
+evidential deep learning $\cdot$ Dempster-Shafer theory $\cdot$ calibration $\cdot$ precision-recall $\cdot$ MLOps
 
 % ======================================================================
 \section{Introduction}
@@ -85,7 +85,7 @@ Classical machine learning offers two generic answers to label noise: \emph{regu
 logistic regression or support vector machines, shallower trees, slower boosting) and careful \emph{evaluation} on
 metrics that remain informative under class imbalance~\cite{saito2015precision}. Neither, however, gives the model a
 way to say ``I do not know''. Evidential deep learning (EDL)~\cite{sensoy2018evidential} does: grounded in
-Dempster--Shafer theory~\cite{dempster1967upper,shafer1976mathematical} and subjective logic~\cite{josang2016subjective},
+Dempster-Shafer theory~\cite{dempster1967upper,shafer1976mathematical} and subjective logic~\cite{josang2016subjective},
 it lets a network output a Dirichlet distribution whose total strength measures the amount of evidence, and turns the
 lack of evidence into an explicit uncertainty mass. Evidential uncertainty has been used on chest radiographs to
 reject unreliable cases and to flag likely annotation errors~\cite{ghesu2019quantifying,ghesu2021quantifying}.
@@ -95,8 +95,8 @@ how far classical robustness tools go against label uncertainty, and what an evi
 \begin{enumerate}
   \item a complete, validation-tuned evaluation of nine classical classifiers, including a from-scratch logistic
         regression trained by stochastic gradient ascent (SGA), with bootstrap confidence intervals and a controlled
-        study of why precision--recall curves must replace ROC curves when the disease is rare;
-  \item a factorial label-noise study (clean/noisy $\times$ baseline/regularised/recalibrated, 0--40\% flipped
+        study of why precision-recall curves must replace ROC curves when the disease is rare;
+  \item a factorial label-noise study (clean/noisy $\times$ baseline/regularised/recalibrated, 0 to 40\% flipped
         minority labels, repeated seeds) showing that asymmetric label noise mainly \emph{moves the decision threshold}
         while leaving the ranking almost intact, and that stronger regularisation does not help;
   \item a PyTorch implementation of an evidential CNN compared with an identical softmax CNN, evaluated not only on
@@ -193,7 +193,7 @@ The \textbf{softmax} model is trained with cross-entropy. The \textbf{evidential
 maps logits $z$ to non-negative evidence $e_k=\mathrm{softplus}(z_k)$ and Dirichlet parameters $\alpha_k=e_k+1$. With
 $S=\sum_k\alpha_k$ and $K=2$ classes, subjective logic~\cite{josang2016subjective} gives belief masses $b_k=e_k/S$ and an
 uncertainty (ignorance) mass $u=K/S$ with $\sum_k b_k+u=1$, and the expected class probability is $\hat p_k=\alpha_k/S$.
-The loss is the Bayes risk of the cross-entropy under the Dirichlet plus an annealed Kullback--Leibler term that removes
+The loss is the Bayes risk of the cross-entropy under the Dirichlet plus an annealed Kullback-Leibler term that removes
 evidence not supported by the label:
 \begin{equation}
   \mathcal L_i=\sum_{k}y_{ik}\big(\psi(S_i)-\psi(\alpha_{ik})\big)
@@ -205,7 +205,7 @@ evidence'' ($S\to K$, $u\to1$) separately from ``balanced evidence'' ($\hat p\ap
 
 \subsection{Evaluation protocol}
 We report accuracy, precision, recall (sensitivity), specificity, F1, ROC-AUC and average precision (AP, area under the
-precision--recall curve), with 95\% bootstrap confidence intervals (1\,000 resamples of the test set). Calibration is
+precision-recall curve), with 95\% bootstrap confidence intervals (1\,000 resamples of the test set). Calibration is
 measured by the expected calibration error (ECE, 15 bins)~\cite{guo2017calibration}. Uncertainty scores (normalised
 predictive entropy for the softmax model, $u$ for EDL) are assessed by the AUROC for (a)~separating misclassified from
 correct test predictions, (b)~separating the PneumoniaMNIST test set from OOD images of other modalities (BreastMNIST
@@ -224,7 +224,7 @@ bootstrap intervals of F1 are wide and overlap substantially (\eg $[0.859, 0.905
 $[0.880, 0.920]$ for the linear SVM): on 624 test images, the differences among the leading models are within the
 sampling uncertainty. The single tree is clearly the weakest ranker (ROC-AUC 0.747), and boosting repairs
 this (0.931 for AdaBoost, 0.938 for gradient boosting; Fig.~\ref{fig:boosting}). All models share one weakness: a recall
-of 0.90--0.99 but a specificity of only 0.57--0.73. Validation accuracies were much higher (up to 0.973 for the RBF-SVM),
+of 0.90 to 0.99 but a specificity of only 0.57 to 0.73. Validation accuracies were much higher (up to 0.973 for the RBF-SVM),
 because the threshold learned at a 74\% pneumonia prevalence is too aggressive for the 62.5\% prevalence of the test set.
 Decision boundaries on a 2-D PCA projection (Fig.~\ref{fig:boundaries}) illustrate the inductive biases: a single
 straight line with smoothly varying probabilities for logistic regression, axis-aligned staircases with piecewise-constant
@@ -233,17 +233,17 @@ probabilities for the tree, and a smooth curved frontier for the RBF-SVM.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig_roc_pr}
-  \caption{ROC (left) and precision--recall (right) curves of the classical models on the clean test set
+  \caption{ROC (left) and precision-recall (right) curves of the classical models on the clean test set
            (positive class: pneumonia). The dotted line of the PR plot is the no-skill level, \ie the prevalence.}
   \label{fig:rocpr}
 \end{figure}
 
 \input{tables/tab_clean}
 
-\subsection{Why precision--recall instead of ROC under imbalance}
+\subsection{Why precision-recall instead of ROC under imbalance}
 Pneumonia is the \emph{majority} class of PneumoniaMNIST, whereas screening typically targets a rare disease. Keeping
 the RBF-SVM fixed, we subsampled the pneumonia cases of the test set to vary the prevalence from 50\% to 5\%
-(200 draws each, Fig.~\ref{fig:prevalence}). The ROC-AUC does not move (0.947--0.949), while the average precision falls
+(200 draws each, Fig.~\ref{fig:prevalence}). The ROC-AUC does not move (0.947 to 0.949), while the average precision falls
 from 0.938 to 0.544$\pm$0.107. The false-positive rate divides false alarms by the (large) number of healthy patients
 and therefore hides them when the disease is rare; precision compares them with the true detections, which is what a
 clinician experiences. The PR curve is thus the honest summary for imbalanced medical data~\cite{saito2015precision,davis2006relationship}.
@@ -252,16 +252,16 @@ clinician experiences. The PR curve is thus the honest summary for imbalanced me
   \centering
   \includegraphics[width=\linewidth]{fig_prevalence}
   \caption{Same classifier (RBF-SVM), same scores: ROC curves are invariant to the prevalence of the positive class,
-           precision--recall curves collapse when the disease becomes rare.}
+           precision-recall curves collapse when the disease becomes rare.}
   \label{fig:prevalence}
 \end{figure}
 
 \subsection{Robustness of classical models to label noise}
 With 5\% of the normal training labels flipped (Table~\ref{tab:noise5}), baseline models lose about one point of
-accuracy and 2--4 points of specificity, while their ROC-AUC is unchanged; F1, dominated by the majority class, barely
+accuracy and 2 to 4 points of specificity, while their ROC-AUC is unchanged; F1, dominated by the majority class, barely
 moves. The sweep of Fig.~\ref{fig:noise_classical} reveals the mechanism. Up to 40\% of flipped minority labels, the
-specificity of the baselines collapses from about 0.6 to 0.19--0.32 and their accuracy falls to 0.70--0.74, yet the
-ROC-AUC stays within 0.92--0.95: \textbf{asymmetric label noise moves the decision threshold rather than the ranking}.
+specificity of the baselines collapses from about 0.6 to between 0.19 and 0.32 and their accuracy falls to between 0.70 and 0.74, yet the
+ROC-AUC stays between 0.92 and 0.95: \textbf{asymmetric label noise moves the decision threshold rather than the ranking}.
 The models still order patients correctly, but they have learned an inflated pneumonia prevalence. Consistently,
 \textbf{stronger regularisation does not help}: the regularised variants are worse than the baselines at every noise
 level, because a more constrained model leans more on the (corrupted) class prior. Conversely, simply re-selecting the
@@ -283,9 +283,9 @@ threshold on the small clean validation set keeps the accuracy of all three mode
 Table~\ref{tab:edl} and Fig.~\ref{fig:noise_all} compare the two CNNs with the best classical model. At the default
 threshold of 0.5, both CNNs are \emph{less} accurate than the RBF-SVM (0.779$\pm$0.067 for softmax and 0.761$\pm$0.084
 for EDL on clean labels, versus 0.857) and vary strongly across seeds, although they rank patients as well
-(ROC-AUC 0.94--0.96). Small CNNs over-fit the training prevalence even more than the classical models: their
+(ROC-AUC 0.94 to 0.96). Small CNNs over-fit the training prevalence even more than the classical models: their
 specificity is low and unstable. Once the threshold is re-selected on the clean validation set, all models converge to
-an accuracy of 0.86--0.87 on clean labels. At equal architecture, the evidential head neither improves nor degrades
+an accuracy of 0.86 to 0.87 on clean labels. At equal architecture, the evidential head neither improves nor degrades
 classification: at every noise level, the mean accuracies of the softmax and EDL models differ by at most 0.03, well
 within their seed-to-seed spread (Fig.~\ref{fig:noise_all}). The evidential model is, however, consistently \textbf{better calibrated}: its expected calibration error
 is lower at all six noise levels, and the gap widens under noise (0.144 versus 0.174 on clean labels, 0.126 versus 0.206
@@ -302,10 +302,27 @@ prevents the over-confidence that cross-entropy induces on contradictory example
   \label{fig:noise_all}
 \end{figure}
 
+\subsection{Comparison with published benchmarks}
+Table~\ref{tab:benchmark} places our results next to the official MedMNIST v2 benchmark~\cite{yang2023medmnist}, which
+uses the same data, the same patient-disjoint splits and the same test metrics (ROC-AUC and accuracy at the default
+threshold). At the native $28\times28$ resolution, our RBF-SVM (ROC-AUC 0.947, accuracy 0.857) and our softmax CNN
+(ROC-AUC 0.946$\pm$0.001) match the ResNet-18 and ResNet-50 baselines (0.944 to 0.948, accuracy 0.854) and the
+auto-sklearn and AutoKeras pipelines, although our CNN has only 23\,650 parameters (about 11 million for ResNet-18) and our classical models need no GPU.
+The evidential head keeps the ranking quality of the softmax head (ROC-AUC 0.940$\pm$0.014). Two gaps remain. First,
+the accuracy of our CNNs at the 0.5 threshold is lower and unstable across seeds, a consequence of the prevalence shift
+discussed above; once the threshold is chosen on the validation set they reach 0.86 to 0.87, but this step is not part of
+the benchmark protocol and is reported separately. Second, higher input resolution ($224\times224$) and
+Google AutoML Vision (ROC-AUC 0.991, accuracy 0.946) remain clearly ahead. The benchmark reports neither calibration,
+nor robustness to label noise, nor uncertainty quality, so the main contributions of the evidential model
+(Sections above and below) have no published counterpart on this dataset and are compared only against our own softmax
+baseline.
+
+\input{tables/tab_benchmark}
+
 \subsection{What is the evidential uncertainty good for?}
 Table~\ref{tab:uncertainty} and Fig.~\ref{fig:uncertainty} evaluate the uncertainty itself.
 \emph{Referral of doubtful cases.} Both uncertainty scores separate misclassified from correct test predictions with an
-AUROC of about 0.80--0.84, without a consistent winner. For the seed shown in Fig.~\ref{fig:uncertainty} (left), the
+AUROC of about 0.80 to 0.84, without a consistent winner. For the seed shown in Fig.~\ref{fig:uncertainty} (left), the
 evidential model retains a higher accuracy at almost every referral rate, in particular when trained with 20\% noise;
 with three seeds, this observation should be confirmed on more runs.
 \emph{Flipped training labels.} With 20\% of the normal labels flipped, the uncertainty ranks flipped training images

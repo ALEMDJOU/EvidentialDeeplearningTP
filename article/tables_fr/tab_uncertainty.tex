@@ -1,15 +1,15 @@
 \begin{table}[t]
 \centering
 \small
-\caption{AUROC des scores d'incertitude (moyenne$\pm$écart-type sur 3 graines) pour détecter les images de test mal classées, les images hors distribution (échographies BreastMNIST, scanners OrganCMNIST) et les étiquettes d'entraînement inversées. \emph{Désacc.}~: $1-\hat p(\text{étiquette fournie})$.}
+\caption{AUROC des scores d'incertitude (moyenne$\pm$écart-type sur 3 seeds) pour détecter les images de test mal classées, les images OOD (échographies BreastMNIST, scanners OrganCMNIST) et les étiquettes d'entraînement inversées. \emph{Désacc.}~: $1-\hat p(\text{étiquette fournie})$.}
 \label{tab:uncertainty}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{llccccc}
 \toprule
 Bruit (entraîn.) & Modèle (incertitude) & Erreurs & OOD échographie & OOD scanner & Inversées ($u$) & Inversées (désacc.) \\
 \midrule
-0\% & CNN EDL ($u=K/S$) & 0,830$\pm$0,006 & 0,763$\pm$0,029 & 0,650$\pm$0,213 & -- & -- \\
-0\% & CNN softmax (entropie) & 0,822$\pm$0,016 & 0,814$\pm$0,009 & 0,675$\pm$0,065 & -- & -- \\
+0\% & CNN EDL ($u=K/S$) & 0,830$\pm$0,006 & 0,763$\pm$0,029 & 0,650$\pm$0,213 & n.d. & n.d. \\
+0\% & CNN softmax (entropie) & 0,822$\pm$0,016 & 0,814$\pm$0,009 & 0,675$\pm$0,065 & n.d. & n.d. \\
 20\% & CNN EDL ($u=K/S$) & 0,801$\pm$0,030 & 0,753$\pm$0,110 & 0,847$\pm$0,026 & 0,882$\pm$0,012 & 0,924$\pm$0,060 \\
 20\% & CNN softmax (entropie) & 0,836$\pm$0,051 & 0,829$\pm$0,043 & 0,795$\pm$0,031 & 0,885$\pm$0,017 & 0,899$\pm$0,058 \\
 \bottomrule

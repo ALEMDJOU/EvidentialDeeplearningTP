@@ -1,16 +1,16 @@
 \begin{table}[t]
 \centering
 \small
-\caption{Performances en test de tous les modèles classiques entraînés sur des étiquettes propres (classe positive~: pneumonie~; intervalle de confiance bootstrap à 95\,\% pour le F1). Meilleure valeur de chaque colonne en gras.}
+\caption{Performances en test de tous les modèles classiques entraînés sur des étiquettes propres (classe positive~: pneumonie~; intervalle de confiance bootstrap à 95\,\% pour le F1-score). Meilleure valeur de chaque colonne en gras.}
 \label{tab:clean}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{lccccccc}
 \toprule
-Modèle & Exact. & Préc. & Rappel & Spéc. & F1 [IC 95\,\%] & AUC ROC & AP \\
+Modèle & Acc. & Préc. & Rappel & Spéc. & F1 [IC 95\,\%] & ROC-AUC & AP \\
 \midrule
 LogReg-SGA (nôtre) & 0,851 & 0,814 & 0,987 & 0,624 & 0,892 [0,870~; 0,913] & 0,927 & 0,926 \\
 LogReg & 0,837 & 0,800 & 0,985 & 0,590 & 0,883 [0,859~; 0,905] & 0,923 & 0,924 \\
-Bayes naïf gaussien & 0,833 & \textbf{0,847} & 0,895 & \textbf{0,731} & 0,870 [0,846~; 0,894] & 0,834 & 0,842 \\
+Naive Bayes gaussien & 0,833 & \textbf{0,847} & 0,895 & \textbf{0,731} & 0,870 [0,846~; 0,894] & 0,834 & 0,842 \\
 KNN & 0,830 & 0,793 & 0,985 & 0,573 & 0,879 [0,856~; 0,902] & 0,904 & 0,904 \\
 Arbre de décision & 0,804 & 0,790 & 0,936 & 0,585 & 0,857 [0,831~; 0,881] & 0,747 & 0,775 \\
 AdaBoost & 0,840 & 0,806 & 0,979 & 0,607 & 0,884 [0,861~; 0,906] & 0,931 & 0,934 \\

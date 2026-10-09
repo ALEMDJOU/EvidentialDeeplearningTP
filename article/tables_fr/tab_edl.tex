@@ -1,20 +1,20 @@
 \begin{table}[t]
 \centering
 \small
-\caption{Performances en test (propre) après entraînement avec des étiquettes minoritaires inversées (moyenne$\pm$écart-type sur les graines~: 5 pour le modèle classique, 3 pour les CNN). \emph{recal.}~: seuil de décision re-choisi sur la validation propre. ECE~: erreur de calibration attendue (plus faible = meilleure).}
+\caption{Performances en test (propre) après entraînement avec des étiquettes minoritaires inversées (moyenne$\pm$écart-type sur les seeds~: 5 pour le modèle classique, 3 pour les CNN). \emph{recal.}~: seuil de décision re-choisi sur la validation propre. ECE~: Expected Calibration Error (plus faible = meilleure).}
 \label{tab:edl}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{llcccccc}
 \toprule
-Bruit & Modèle & Exact. & Spéc. & AUC ROC & Exact. (recal.) & Spéc. (recal.) & ECE \\
+Bruit & Modèle & Acc. & Spéc. & ROC-AUC & Acc. (recal.) & Spéc. (recal.) & ECE \\
 \midrule
-0\% & SVM RBF (classique) & 0,857 & 0,632 & 0,947 & 0,872 & 0,671 & -- \\
+0\% & SVM RBF (classique) & 0,857 & 0,632 & 0,947 & 0,872 & 0,671 & n.d. \\
 0\% & CNN softmax & 0,779$\pm$0,067 & 0,419$\pm$0,187 & 0,946$\pm$0,001 & 0,869$\pm$0,010 & 0,682$\pm$0,012 & 0,174$\pm$0,080 \\
 0\% & CNN EDL & 0,761$\pm$0,084 & 0,377$\pm$0,250 & 0,940$\pm$0,014 & 0,860$\pm$0,011 & 0,661$\pm$0,040 & 0,144$\pm$0,075 \\
-5\% & SVM RBF (classique) & 0,848$\pm$0,005 & 0,608$\pm$0,014 & 0,946$\pm$0,002 & 0,866$\pm$0,017 & 0,668$\pm$0,060 & -- \\
+5\% & SVM RBF (classique) & 0,848$\pm$0,005 & 0,608$\pm$0,014 & 0,946$\pm$0,002 & 0,866$\pm$0,017 & 0,668$\pm$0,060 & n.d. \\
 5\% & CNN softmax & 0,810$\pm$0,055 & 0,504$\pm$0,158 & 0,946$\pm$0,011 & 0,856$\pm$0,025 & 0,634$\pm$0,073 & 0,129$\pm$0,054 \\
 5\% & CNN EDL & 0,798$\pm$0,096 & 0,486$\pm$0,298 & 0,950$\pm$0,025 & 0,862$\pm$0,038 & 0,660$\pm$0,114 & 0,128$\pm$0,045 \\
-20\% & SVM RBF (classique) & 0,821$\pm$0,008 & 0,531$\pm$0,022 & 0,944$\pm$0,004 & 0,890$\pm$0,011 & 0,748$\pm$0,034 & -- \\
+20\% & SVM RBF (classique) & 0,821$\pm$0,008 & 0,531$\pm$0,022 & 0,944$\pm$0,004 & 0,890$\pm$0,011 & 0,748$\pm$0,034 & n.d. \\
 20\% & CNN softmax & 0,722$\pm$0,049 & 0,259$\pm$0,129 & 0,950$\pm$0,013 & 0,855$\pm$0,012 & 0,658$\pm$0,045 & 0,206$\pm$0,058 \\
 20\% & CNN EDL & 0,755$\pm$0,053 & 0,349$\pm$0,146 & 0,949$\pm$0,021 & 0,863$\pm$0,037 & 0,681$\pm$0,126 & 0,126$\pm$0,050 \\
 \bottomrule

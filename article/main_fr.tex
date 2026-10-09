@@ -21,7 +21,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \renewcommand{\headrulewidth}{0.4pt}
-\fancyhead[C]{\small\scshape Prépublication, \today}
+\fancyhead[C]{\small\scshape Preprint, \today}
 \fancyfoot[C]{\thepage}
 \fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}\fancyfoot[C]{\thepage}}
 \setlength{\headheight}{14pt}
@@ -56,20 +56,20 @@ modèles classiques et incertitude évidentielle\\ pour la détection de la pneu
 \begin{abstract}
 Les étiquettes des images médicales sont souvent incertaines, alors que les classifieurs classiques les traitent comme
 exactes. Nous étudions ce décalage sur PneumoniaMNIST. Neuf modèles classiques, dont une régression logistique
-implémentée de zéro et entraînée par montée de gradient stochastique, des arbres boostés et des SVM à noyau, sont réglés
+implémentée from scratch et entraînée par Stochastic Gradient Ascent (SGA), des arbres boostés et des SVM à noyau, sont réglés
 sur la validation puis soumis à l'inversion de 0 à 40\,\% des étiquettes d'entraînement de la classe minoritaire~; un
 CNN évidentiel est comparé à un CNN softmax identique. Trois constats émergent. D'abord, le bruit asymétrique déplace
-surtout le seuil de décision~: la spécificité chute d'environ 0,6 à 0,2--0,3 tandis que l'AUC ROC reste entre 0,92 et
+surtout le seuil de décision~: la spécificité chute d'environ 0,6 à une valeur comprise entre 0,2 et 0,3 tandis que la ROC-AUC reste entre 0,92 et
 0,95. Ensuite, une régularisation plus forte dégrade systématiquement les résultats, alors que re-choisir le seuil sur un
-petit ensemble propre maintient l'exactitude entre 0,85 et 0,89 jusqu'à 40\,\% de bruit. Enfin, le modèle évidentiel
-égale l'exactitude du softmax et est mieux calibré sous bruit (erreur de calibration 0,13 contre 0,21 à 20\,\% de
-bruit), mais son incertitude n'améliore pas de façon fiable la détection hors distribution. Tous les résultats sont
+petit ensemble propre maintient l'accuracy entre 0,85 et 0,89 jusqu'à 40\,\% de bruit. Enfin, le modèle évidentiel
+égale l'accuracy du softmax et est mieux calibré sous bruit (ECE 0,13 contre 0,21 à 20\,\% de
+bruit), mais son incertitude n'améliore pas de façon fiable la détection OOD. Tous les résultats sont
 reproductibles à partir de notebooks publics et d'exécutions MLflow.
 \end{abstract}
 
 \noindent\textbf{Mots-clés~:} classification d'images médicales $\cdot$ bruit d'étiquetage $\cdot$ étiquettes
-incertaines $\cdot$ apprentissage profond évidentiel $\cdot$ théorie de Dempster--Shafer $\cdot$ calibration $\cdot$
-précision--rappel $\cdot$ MLOps
+incertaines $\cdot$ Evidential Deep Learning $\cdot$ théorie de Dempster-Shafer $\cdot$ calibration $\cdot$
+précision-rappel $\cdot$ MLOps
 
 % ======================================================================
 \section{Introduction}
@@ -81,33 +81,33 @@ et les erreurs d'annotation sont inévitables à grande échelle~\cite{karimi202
 étiquettes étaient exactes peut mémoriser le bruit~\cite{zhang2017understanding} et, plus insidieusement, renvoie une
 probabilité confiante pour toute entrée, y compris celles sur lesquelles il ne dispose d'aucune évidence.
 
-L'apprentissage automatique classique offre deux réponses génériques au bruit d'étiquetage~: la \emph{régularisation}
+Le machine learning classique offre deux réponses génériques au bruit d'étiquetage~: la \emph{régularisation}
 (pénalité plus forte en régression logistique ou en SVM, arbres moins profonds, boosting plus lent) et une
 \emph{évaluation} rigoureuse sur des métriques qui restent informatives en cas de déséquilibre des
-classes~\cite{saito2015precision}. Aucune ne permet pourtant au modèle de dire «~je ne sais pas~». L'apprentissage
-profond évidentiel (EDL)~\cite{sensoy2018evidential} le permet~: fondé sur la théorie de
-Dempster--Shafer~\cite{dempster1967upper,shafer1976mathematical} et la logique subjective~\cite{josang2016subjective}, il
+classes~\cite{saito2015precision}. Aucune ne permet pourtant au modèle de dire «~je ne sais pas~». L'Evidential
+Deep Learning (EDL)~\cite{sensoy2018evidential} le permet~: fondé sur la théorie de
+Dempster-Shafer~\cite{dempster1967upper,shafer1976mathematical} et la logique subjective~\cite{josang2016subjective}, il
 fait produire au réseau une distribution de Dirichlet dont la force totale mesure la quantité d'évidence, et transforme
 le manque d'évidence en une masse d'incertitude explicite. L'incertitude évidentielle a été utilisée sur des
 radiographies thoraciques pour rejeter les cas peu fiables et signaler des erreurs d'annotation
 probables~\cite{ghesu2019quantifying,ghesu2021quantifying}.
 
-Ce rapport étudie, sur un banc d'essai volontairement léger mais réaliste (PneumoniaMNIST~\cite{yang2023medmnist}),
+Ce rapport étudie, sur un benchmark volontairement léger mais réaliste (PneumoniaMNIST~\cite{yang2023medmnist}),
 jusqu'où vont les outils classiques de robustesse face à l'incertitude des étiquettes, et ce qu'apporte un modèle
 évidentiel. Nos contributions sont les suivantes~:
 \begin{enumerate}
   \item une évaluation complète, réglée sur la validation, de neuf classifieurs classiques, dont une régression
-        logistique implémentée de zéro et entraînée par montée de gradient stochastique (SGA), avec des intervalles de
-        confiance bootstrap et une étude contrôlée montrant pourquoi les courbes précision--rappel doivent remplacer les
+        logistique implémentée from scratch et entraînée par Stochastic Gradient Ascent (SGA), avec des intervalles de
+        confiance bootstrap et une étude contrôlée montrant pourquoi les courbes précision-rappel doivent remplacer les
         courbes ROC lorsque la maladie est rare~;
   \item une étude factorielle du bruit d'étiquetage (propre/bruité $\times$ référence/régularisé/recalibré, 0 à
-        40\,\% d'étiquettes minoritaires inversées, graines répétées) montrant que le bruit asymétrique \emph{déplace
+        40\,\% d'étiquettes minoritaires inversées, seeds répétées) montrant que le bruit asymétrique \emph{déplace
         surtout le seuil de décision} en laissant le classement presque intact, et qu'une régularisation plus forte
         n'aide pas~;
   \item une implémentation PyTorch d'un CNN évidentiel comparée à un CNN softmax identique, évaluée non seulement sur
-        l'exactitude mais aussi sur l'utilité de l'incertitude~: renvoi des cas douteux, détection d'images hors
-        distribution et repérage des étiquettes d'entraînement inversées~;
-  \item une chaîne MLOps reproductible (suivi MLflow, registre de modèles) et des notebooks publics générant chaque
+        l'accuracy mais aussi sur l'utilité de l'incertitude~: renvoi des cas douteux, détection d'images out-of-distribution
+        (OOD) et repérage des étiquettes d'entraînement inversées~;
+  \item un pipeline MLOps reproductible (suivi MLflow, model registry) et des notebooks publics générant chaque
         nombre, table et figure de ce rapport.
 \end{enumerate}
 
@@ -116,28 +116,28 @@ jusqu'où vont les outils classiques de robustesse face à l'incertitude des ét
 % ======================================================================
 \paragraph{Classification classique et régularisation.}
 La régression logistique entraînée par des méthodes de gradient stochastique~\cite{robbins1951stochastic,bottou2010large},
-le Bayes naïf~\cite{domingos1997optimality}, les plus proches voisins~\cite{beyer1999nearest}, les arbres de
-décision~\cite{breiman1984classification}, le boosting~\cite{freund1997decision,friedman2001greedy} et les machines à
-vecteurs de support (à noyau)~\cite{cortes1995support,scholkopf2002learning} restent des références solides sur les
+le Naive Bayes~\cite{domingos1997optimality}, les $K$-Nearest Neighbors~\cite{beyer1999nearest}, les arbres de
+décision~\cite{breiman1984classification}, le boosting~\cite{freund1997decision,friedman2001greedy} et les Support Vector
+Machines (SVM, à noyau)~\cite{cortes1995support,scholkopf2002learning} restent des références solides sur les
 petits jeux de données médicaux. Leur capacité est contrôlée par une régularisation explicite~: la pénalité inverse
-$C$, la profondeur et la taille des feuilles des arbres, ou le taux d'apprentissage et le nombre d'itérations du
+$C$, la profondeur et la taille des feuilles des arbres, ou le learning rate et le nombre d'itérations du
 boosting.
 
 \paragraph{Apprentissage avec des étiquettes bruitées.}
 Le bruit d'étiquetage a fait l'objet de nombreuses synthèses~\cite{frenay2014classification,song2022learning}, y compris
 en imagerie médicale~\cite{karimi2020deep}. Les remèdes incluent la correction de la perte sous un modèle de bruit
 connu~\cite{natarajan2013learning}, des pertes robustes au bruit~\cite{ghosh2017robust,zhang2018generalized} et
-l'identification des exemples mal étiquetés, par exemple par l'apprentissage confiant~\cite{northcutt2021confident}. Les
+l'identification des exemples mal étiquetés, par exemple par le confident learning~\cite{northcutt2021confident}. Les
 réseaux profonds peuvent ajuster des étiquettes arbitraires~\cite{zhang2017understanding}~: leur comportement sous bruit
 dépend donc fortement des choix d'entraînement.
 
 \paragraph{Quantification de l'incertitude.}
-Les approximations bayésiennes comme le dropout Monte-Carlo~\cite{gal2016dropout} et les ensembles
-profonds~\cite{lakshminarayanan2017simple} estiment l'incertitude à partir de plusieurs passes avant. Les réseaux à
-a priori~\cite{malinin2018prior} et l'EDL~\cite{sensoy2018evidential} prédisent au contraire les paramètres d'une
-distribution de Dirichlet en une seule passe~; voir~\cite{ulmer2023prior} pour une synthèse. L'incertitude est
-généralement évaluée par la calibration~\cite{guo2017calibration}, la détection des erreurs et des exemples hors
-distribution (OOD)~\cite{hendrycks2017baseline}, et la prédiction sélective~\cite{geifman2017selective}. En radiographie
+Les approximations bayésiennes comme le Monte-Carlo dropout~\cite{gal2016dropout} et les deep
+ensembles~\cite{lakshminarayanan2017simple} estiment l'incertitude à partir de plusieurs forward passes. Les Prior
+Networks~\cite{malinin2018prior} et l'EDL~\cite{sensoy2018evidential} prédisent au contraire les paramètres d'une
+distribution de Dirichlet en un seul forward pass~; voir~\cite{ulmer2023prior} pour une synthèse. L'incertitude est
+généralement évaluée par la calibration~\cite{guo2017calibration}, la détection des erreurs et des exemples out-of-distribution
+(OOD)~\cite{hendrycks2017baseline}, et la selective prediction~\cite{geifman2017selective}. En radiographie
 thoracique, Ghesu \emph{et al.}~\cite{ghesu2019quantifying,ghesu2021quantifying} ont montré que l'incertitude
 évidentielle permet de rejeter les cas ambigus et d'identifier le bruit d'étiquetage.
 
@@ -146,15 +146,15 @@ thoracique, Ghesu \emph{et al.}~\cite{ghesu2019quantifying,ghesu2021quantifying}
 % ======================================================================
 \subsection{Données et prétraitement}
 PneumoniaMNIST~\cite{yang2023medmnist} contient des radiographies thoraciques pédiatriques~\cite{kermany2018identifying}
-redimensionnées en $28\times28$ pixels en niveaux de gris, avec des partitions officielles disjointes par patient de
+redimensionnées en $28\times28$ pixels en niveaux de gris, avec des splits officiels disjoints par patient de
 4\,708 (entraînement), 524 (validation) et 624 (test) images. La tâche est binaire~: $y=1$ (pneumonie, classe positive)
 contre $y=0$ (normal). Les images normales forment la classe minoritaire (25,8\,\% de l'entraînement)~; la prévalence de
 la pneumonie passe de 74,2\,\% (entraînement et validation) à 62,5\,\% (test), un décalage d'acquisition réaliste
 (figure~\ref{fig:samples}). Pour les modèles classiques, chaque image est aplatie en $x\in[0,1]^{784}$ et standardisée
 avec les statistiques d'entraînement. Le jeu ne comporte aucune valeur manquante~; un masque simulé de 5\,\% de pixels
-manquants complètement au hasard, imputé dans le pipeline, n'a fait baisser l'exactitude de validation de la régression
-logistique que de 0,958 à 0,952 (imputation par la moyenne). \textbf{Tous les hyperparamètres sont choisis sur la
-partition de validation}~; la partition de test n'est utilisée qu'une fois, pour le rapport.
+manquants complètement au hasard, imputé dans le pipeline, n'a fait baisser l'accuracy de validation de la régression
+logistique que de 0,958 à 0,952 (imputation par la moyenne). \textbf{Tous les hyperparamètres sont choisis sur le
+split de validation}~; le split de test n'est utilisé qu'une fois, pour le rapport.
 
 \subsection{Modèles classiques}
 \paragraph{Régression logistique par SGA.} Nous maximisons la log-vraisemblance pénalisée $\ell_2$ avec des mises à jour
@@ -163,25 +163,25 @@ exemple par exemple
   \theta \leftarrow \theta + \alpha_t\big[(y_i - \sigma(\theta^\top x_i + b))\,x_i - \lambda\theta\big],\qquad
   \alpha_t = \frac{\alpha_0}{1+\kappa t},
 \end{equation}
-avec $\alpha_0=0{,}01$, $\lambda=0{,}01$, $\kappa=10^{-4}$ et 30 époques. Chaque mise à jour coûte $O(m)$ au lieu de
-$O(nm)$ pour la montée de gradient par lot~; sur un problème synthétique de 200\,000 exemples, le SGA arrive à moins de
-0,005 de la meilleure log-vraisemblance de validation après 0,69 passe sur les données, contre 34 passes pour la montée
-de gradient par lot (figure~\ref{fig:sga}). L'extension multiclasse (softmax) atteint 67,7\,\% d'exactitude en test sur
+avec $\alpha_0=0{,}01$, $\lambda=0{,}01$, $\kappa=10^{-4}$ et 30 epochs. Chaque mise à jour coûte $O(m)$ au lieu de
+$O(nm)$ pour le batch gradient ascent~; sur un problème synthétique de 200\,000 exemples, le SGA arrive à moins de
+0,005 de la meilleure log-vraisemblance de validation après 0,69 epoch, contre 34 epochs pour le batch
+gradient ascent (figure~\ref{fig:sga}). L'extension multiclasse (softmax) atteint 67,7\,\% d'accuracy en test sur
 OrganCMNIST (11 classes), au niveau du solveur multinomial de scikit-learn (67,4\,\%). La sortie sigmoïde se lit comme
-$P(y=1\mid x)$, c'est-à-dire un modèle de log-cote dont nous vérifions la calibration par un diagramme de fiabilité
+$P(y=1\mid x)$, c'est-à-dire un modèle de log-odds dont nous vérifions la calibration par un reliability diagram
 (figure~\ref{fig:logreg}). Nous reportons aussi la solution L-BFGS de scikit-learn~\cite{pedregosa2011scikit}
 ($C=10^{-3}$).
 
-\paragraph{Autres modèles.} Bayes naïf gaussien, dont l'hypothèse d'indépendance conditionnelle est fortement violée par
-les pixels voisins (corrélation $\approx 0{,}92$) mais qui s'entraîne en une seule passe $O(nm)$~; $K$ plus proches
-voisins ($K=7$, distance euclidienne), qui se dégradent bien moins avec la dimension que ne le suggère la concentration
+\paragraph{Autres modèles.} Naive Bayes gaussien, dont l'hypothèse d'indépendance conditionnelle est fortement violée par
+les pixels voisins (corrélation $\approx 0{,}92$) mais qui s'entraîne en une seule passe $O(nm)$~; $K$-Nearest
+Neighbors (KNN, $K=7$, distance euclidienne), qui se dégradent bien moins avec la dimension que ne le suggère la concentration
 des distances sur des données uniformes, car les radiographies vivent sur une variété de faible dimension
 (figure~\ref{fig:knn})~; CART avec l'impureté de Gini (profondeur 13, au moins 5 exemples par feuille), dont nous avons
 vérifié que le temps d'apprentissage croît linéairement en $n$, $m$ et en profondeur (figure~\ref{fig:tree})~; AdaBoost
-avec des arbres de profondeur 2 (186 itérations, taux d'apprentissage 0,5)~; gradient boosting par histogrammes
-(54 itérations, 15 feuilles, taux d'apprentissage 0,1, $\ell_2=1$)~; un SVM linéaire à marge souple (perte charnière,
+avec des arbres de profondeur 2 (186 itérations, learning rate 0,5)~; gradient boosting histogram-based
+(54 itérations, 15 feuilles, learning rate 0,1, $\ell_2=1$)~; un SVM linéaire à soft margin (hinge loss,
 $C=3{,}2\times10^{-3}$)~; et un SVM à noyau RBF ($C=3$, $\gamma=10^{-3}$) choisi sur une grille de validation
-$4\times4$. Le rôle de $C$ sur la marge et le nombre de vecteurs supports, ainsi que la projection implicite des
+$4\times4$. Le rôle de $C$ sur la marge et le nombre de support vectors, ainsi que la projection implicite des
 noyaux, sont illustrés par les figures~\ref{fig:svm} et~\ref{fig:kernel}.
 
 \subsection{Modèle de bruit et variantes robustes}
@@ -192,57 +192,57 @@ normales, 10 tirages) et un balayage $\rho\in\{0,5,10,20,30,40\}\,\%$ (5 tirages
 test ne sont jamais corrompues. Les trois meilleurs modèles en validation au sein des familles citées par l'énoncé
 (arbres boostés, SVM à noyau et régression logistique régularisée) sont ré-entraînés dans trois configurations~:
 (i)~\emph{référence} (hyperparamètres choisis sur la validation)~;
-(ii)~\emph{robuste}~: régularisation plus forte ($C/10$ pour les SVM et la régression logistique~; 7 feuilles, taux
-d'apprentissage divisé par deux, $\ell_2=10$ et au moins 50 exemples par feuille pour le boosting)~;
-(iii)~\emph{recalibrée}~: le modèle de référence dont le seuil de décision est re-choisi pour maximiser l'exactitude
+(ii)~\emph{robuste}~: régularisation plus forte ($C/10$ pour les SVM et la régression logistique~; 7 feuilles, learning rate
+divisé par deux, $\ell_2=10$ et au moins 50 exemples par feuille pour le boosting)~;
+(iii)~\emph{recalibrée}~: le modèle de référence dont le seuil de décision est re-choisi pour maximiser l'accuracy
 équilibrée sur la validation propre (un petit ensemble de confiance, sans ré-estimation des paramètres).
 
 \subsection{CNN évidentiel}
-Les deux modèles profonds partagent le même CNN (trois blocs de convolution $3\times3$ avec normalisation par lot,
-16/32/64 canaux, moyenne globale, dropout 0,3, couche linéaire~; 23\,650 paramètres) et la même recette d'entraînement
-(Adam, taux d'apprentissage $10^{-3}$, décroissance des poids $10^{-4}$, lots de 128, 15 époques, 3 graines), implémentés
+Les deux modèles profonds partagent le même CNN (trois blocs de convolution $3\times3$ avec batch normalization,
+16/32/64 canaux, global average pooling, dropout 0,3, couche linéaire~; 23\,650 paramètres) et la même recette d'entraînement
+(Adam, learning rate $10^{-3}$, weight decay $10^{-4}$, batch size de 128, 15 epochs, 3 seeds), implémentés
 en PyTorch~\cite{paszke2019pytorch}~; seules la couche de sortie et la perte diffèrent. Le modèle \textbf{softmax} est
-entraîné avec l'entropie croisée. Le modèle \textbf{évidentiel}~\cite{sensoy2018evidential} transforme les logits $z$ en
+entraîné avec la cross-entropy. Le modèle \textbf{évidentiel}~\cite{sensoy2018evidential} transforme les logits $z$ en
 évidences positives $e_k=\mathrm{softplus}(z_k)$ et en paramètres de Dirichlet $\alpha_k=e_k+1$. Avec
 $S=\sum_k\alpha_k$ et $K=2$ classes, la logique subjective~\cite{josang2016subjective} donne des masses de croyance
 $b_k=e_k/S$ et une masse d'incertitude (d'ignorance) $u=K/S$ avec $\sum_k b_k+u=1$~; la probabilité attendue de la
-classe est $\hat p_k=\alpha_k/S$. La perte est le risque bayésien de l'entropie croisée sous la Dirichlet, plus un terme
-de Kullback--Leibler recuit qui retire l'évidence non justifiée par l'étiquette~:
+classe est $\hat p_k=\alpha_k/S$. La perte est le risque bayésien de la cross-entropy sous la Dirichlet, plus un terme
+de Kullback-Leibler avec annealing qui retire l'évidence non justifiée par l'étiquette~:
 \begin{equation}
   \mathcal L_i=\sum_{k}y_{ik}\big(\psi(S_i)-\psi(\alpha_{ik})\big)
   +\lambda_t\,\mathrm{KL}\!\left(\mathrm{Dir}(p\mid\tilde\alpha_i)\,\big\|\,\mathrm{Dir}(p\mid\mathbf 1)\right),\quad
   \tilde\alpha_i=y_i+(1-y_i)\odot\alpha_i,\quad \lambda_t=\min(1,t/10),
 \end{equation}
-où $\psi$ est la fonction digamma et $t$ l'époque. Contrairement à la sortie softmax, la Dirichlet peut exprimer
+où $\psi$ est la fonction digamma et $t$ l'epoch. Contrairement à la sortie softmax, la Dirichlet peut exprimer
 «~aucune évidence~» ($S\to K$, $u\to1$) indépendamment d'une «~évidence équilibrée~» ($\hat p\approx0{,}5$ avec $u$
 faible).
 
 \subsection{Protocole d'évaluation}
-Nous rapportons l'exactitude, la précision, le rappel (sensibilité), la spécificité, le F1, l'AUC ROC et la précision
-moyenne (AP, aire sous la courbe précision--rappel), avec des intervalles de confiance bootstrap à 95\,\% (1\,000
-rééchantillonnages du test). La calibration est mesurée par l'erreur de calibration attendue (ECE, 15
-intervalles)~\cite{guo2017calibration}. Les scores d'incertitude (entropie prédictive normalisée pour le softmax, $u$
+Nous rapportons l'accuracy, la précision, le rappel (sensibilité), la spécificité, le F1, la ROC-AUC et l'average
+precision (AP, aire sous la courbe précision-rappel), avec des intervalles de confiance bootstrap à 95\,\% (1\,000
+rééchantillonnages du test). La calibration est mesurée par l'Expected Calibration Error (ECE, 15
+bins)~\cite{guo2017calibration}. Les scores d'incertitude (entropie prédictive normalisée pour le softmax, $u$
 pour l'EDL) sont évalués par l'AUROC pour (a)~séparer les prédictions erronées des prédictions correctes en test,
-(b)~séparer le test de PneumoniaMNIST d'images hors distribution d'autres modalités (échographies BreastMNIST et scanners
+(b)~séparer le test de PneumoniaMNIST d'images OOD d'autres modalités (échographies BreastMNIST et scanners
 OrganCMNIST~\cite{yang2023medmnist}) et (c)~retrouver les étiquettes d'entraînement inversées. Chaque exécution de
 l'étude de bruit est suivie avec MLflow~\cite{zaharia2018accelerating} (hyperparamètres, métriques, modèle sérialisé avec
-sa signature d'entrée), et le modèle final est versionné dans le registre de modèles MLflow.
+sa signature d'entrée), et le modèle final est versionné dans le model registry MLflow.
 
 % ======================================================================
 \section{Expériences et résultats}
 % ======================================================================
 \subsection{Modèles classiques sur étiquettes propres}
 La table~\ref{tab:clean} et la figure~\ref{fig:rocpr} résument les neuf modèles classiques entraînés sur des étiquettes
-propres. Le SVM à noyau classe le mieux les patients (AUC ROC 0,947, AP 0,961), le SVM linéaire obtient la meilleure
-exactitude et le meilleur F1 (0,864 et 0,900), et notre régression logistique SGA implémentée de zéro (exactitude 0,851,
-AUC ROC 0,927) est au niveau de la solution L-BFGS. Les intervalles bootstrap à 95\,\% du F1 sont larges et se
+propres. Le SVM à noyau classe le mieux les patients (ROC-AUC 0,947, AP 0,961), le SVM linéaire obtient la meilleure
+accuracy et le meilleur F1 (0,864 et 0,900), et notre régression logistique SGA implémentée from scratch (accuracy 0,851,
+ROC-AUC 0,927) est au niveau de la solution L-BFGS. Les intervalles bootstrap à 95\,\% du F1 sont larges et se
 recouvrent nettement (par exemple $[0{,}859~;~0{,}905]$ pour la régression logistique contre $[0{,}880~;~0{,}920]$ pour
 le SVM linéaire)~: sur 624 images de test, les écarts entre les meilleurs modèles restent dans l'incertitude
-d'échantillonnage. L'arbre seul est clairement le moins bon pour classer (AUC ROC 0,747), et le boosting corrige ce
+d'échantillonnage. L'arbre seul est clairement le moins bon pour classer (ROC-AUC 0,747), et le boosting corrige ce
 défaut (0,931 pour AdaBoost, 0,938 pour le gradient boosting~; figure~\ref{fig:boosting}). Tous les modèles partagent
-une faiblesse~: un rappel de 0,90 à 0,99 mais une spécificité de seulement 0,57 à 0,73. Les exactitudes de validation
+une faiblesse~: un rappel de 0,90 à 0,99 mais une spécificité de seulement 0,57 à 0,73. Les accuracies de validation
 étaient bien plus élevées (jusqu'à 0,973 pour le SVM RBF), car le seuil appris avec une prévalence de pneumonie de
-74\,\% est trop agressif pour la prévalence de 62,5\,\% du test. Les frontières de décision sur une projection ACP en
+74\,\% est trop agressif pour la prévalence de 62,5\,\% du test. Les frontières de décision sur une projection PCA en
 2D (figure~\ref{fig:boundaries}) illustrent les biais inductifs~: une droite unique avec des probabilités variant
 continûment pour la régression logistique, des escaliers alignés sur les axes avec des probabilités constantes par
 morceaux pour l'arbre, et une frontière courbe et lisse pour le SVM RBF.
@@ -250,18 +250,18 @@ morceaux pour l'arbre, et une frontière courbe et lisse pour le SVM RBF.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig_roc_pr}
-  \caption{Courbes ROC (gauche) et précision--rappel (droite) des modèles classiques sur le test propre (classe positive~:
-           pneumonie). La ligne pointillée de la courbe PR est le niveau sans compétence, c'est-à-dire la prévalence.}
+  \caption{Courbes ROC (gauche) et précision-rappel (droite) des modèles classiques sur le test propre (classe positive~:
+           pneumonie). La ligne pointillée de la courbe PR est le niveau no-skill, c'est-à-dire la prévalence.}
   \label{fig:rocpr}
 \end{figure}
 
 \input{tables_fr/tab_clean}
 
-\subsection{Pourquoi la courbe précision--rappel plutôt que la ROC en cas de déséquilibre}
+\subsection{Pourquoi la courbe précision-rappel plutôt que la ROC en cas de déséquilibre}
 La pneumonie est la classe \emph{majoritaire} de PneumoniaMNIST, alors qu'un dépistage vise généralement une maladie
 rare. En gardant le SVM RBF fixé, nous avons sous-échantillonné les pneumonies du test pour faire varier la prévalence
-de 50\,\% à 5\,\% (200 tirages chacun, figure~\ref{fig:prevalence}). L'AUC ROC ne bouge pas (0,947 à 0,949), tandis
-que la précision moyenne chute de 0,938 à 0,544\,$\pm$\,0,107. Le taux de faux positifs divise les fausses alertes par
+de 50\,\% à 5\,\% (200 tirages chacun, figure~\ref{fig:prevalence}). La ROC-AUC ne bouge pas (0,947 à 0,949), tandis
+que l'average precision chute de 0,938 à 0,544\,$\pm$\,0,107. Le taux de faux positifs divise les fausses alertes par
 le nombre (élevé) de patients sains et les masque donc lorsque la maladie est rare~; la précision les compare aux vraies
 détections, ce que vit réellement le clinicien. La courbe PR est donc le résumé honnête pour des données médicales
 déséquilibrées~\cite{saito2015precision,davis2006relationship}.
@@ -270,21 +270,21 @@ déséquilibrées~\cite{saito2015precision,davis2006relationship}.
   \centering
   \includegraphics[width=\linewidth]{fig_prevalence}
   \caption{Même classifieur (SVM RBF), mêmes scores~: les courbes ROC sont invariantes à la prévalence de la classe
-           positive, les courbes précision--rappel s'effondrent quand la maladie devient rare.}
+           positive, les courbes précision-rappel s'effondrent quand la maladie devient rare.}
   \label{fig:prevalence}
 \end{figure}
 
 \subsection{Robustesse des modèles classiques au bruit d'étiquetage}
 Avec 5\,\% des étiquettes normales d'entraînement inversées (table~\ref{tab:noise5}), les modèles de référence perdent
-environ un point d'exactitude et 2 à 4 points de spécificité, tandis que leur AUC ROC est inchangée~; le F1, dominé par
+environ un point d'accuracy et 2 à 4 points de spécificité, tandis que leur ROC-AUC est inchangée~; le F1, dominé par
 la classe majoritaire, bouge à peine. Le balayage de la figure~\ref{fig:noise_classical} révèle le mécanisme. Jusqu'à
-40\,\% d'étiquettes minoritaires inversées, la spécificité des modèles de référence s'effondre d'environ 0,6 à 0,19--0,32
-et leur exactitude tombe à 0,70--0,74, alors que l'AUC ROC reste entre 0,92 et 0,95~: \textbf{le bruit asymétrique
+40\,\% d'étiquettes minoritaires inversées, la spécificité des modèles de référence s'effondre d'environ 0,6 à une valeur comprise entre 0,19 et 0,32
+et leur accuracy tombe entre 0,70 et 0,74, alors que la ROC-AUC reste entre 0,92 et 0,95~: \textbf{le bruit asymétrique
 déplace le seuil de décision plutôt que le classement}. Les modèles ordonnent toujours correctement les patients, mais
 ils ont appris une prévalence de pneumonie surestimée. De façon cohérente, \textbf{une régularisation plus forte n'aide
 pas}~: les variantes régularisées sont moins bonnes que les modèles de référence à tous les niveaux de bruit, car un
 modèle plus contraint s'appuie davantage sur l'a priori de classe (corrompu). À l'inverse, re-choisir simplement le
-seuil sur le petit ensemble de validation propre maintient l'exactitude des trois modèles entre 0,85 et 0,89 de 0 à
+seuil sur le petit ensemble de validation propre maintient l'accuracy des trois modèles entre 0,85 et 0,89 de 0 à
 40\,\% de bruit. Ce remède suppose un sous-ensemble étiqueté de confiance et n'indique pas \emph{quelles} étiquettes
 d'entraînement sont fausses.
 
@@ -293,7 +293,7 @@ d'entraînement sont fausses.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig_noise_sweep_classical}
-  \caption{Exactitude, spécificité et AUC ROC en test des trois modèles classiques retenus lorsqu'une fraction
+  \caption{Accuracy, spécificité et ROC-AUC en test des trois modèles classiques retenus lorsqu'une fraction
            croissante des étiquettes d'entraînement minoritaires (normales) est inversée (moyenne\,$\pm$\,écart-type sur
            5 tirages). Trait plein~: référence~; tirets~: régularisation plus forte~; pointillés~: référence avec le seuil
            de décision recalibré sur la validation propre.}
@@ -302,18 +302,18 @@ d'entraînement sont fausses.
 
 \subsection{CNN évidentiel contre CNN softmax}
 La table~\ref{tab:edl} et la figure~\ref{fig:noise_all} comparent les deux CNN au meilleur modèle classique. Au seuil
-par défaut de 0,5, les deux CNN sont \emph{moins} exacts que le SVM RBF (0,779\,$\pm$\,0,067 pour le softmax et
-0,761\,$\pm$\,0,084 pour l'EDL sur étiquettes propres, contre 0,857) et varient fortement d'une graine à l'autre, bien
-qu'ils classent aussi bien les patients (AUC ROC 0,94 à 0,96). De petits CNN sur-apprennent la prévalence
+par défaut de 0,5, les deux CNN ont une accuracy \emph{plus faible} que celle du SVM RBF (0,779\,$\pm$\,0,067 pour le softmax et
+0,761\,$\pm$\,0,084 pour l'EDL sur étiquettes propres, contre 0,857) et varient fortement d'une seed à l'autre, bien
+qu'ils classent aussi bien les patients (ROC-AUC 0,94 à 0,96). De petits CNN overfittent la prévalence
 d'entraînement encore plus que les modèles classiques~: leur spécificité est faible et instable. Une fois le seuil
-re-choisi sur la validation propre, tous les modèles convergent vers une exactitude de 0,86 à 0,87 sur étiquettes
-propres. À architecture égale, la tête évidentielle n'améliore ni ne dégrade la classification~: à chaque niveau de
-bruit, les exactitudes moyennes des modèles softmax et EDL diffèrent d'au plus 0,03, bien en deçà de leur variabilité
-entre graines (figure~\ref{fig:noise_all}). Le modèle évidentiel est en revanche systématiquement \textbf{mieux
-calibré}~: son erreur de calibration attendue est plus faible aux six niveaux de bruit, et l'écart se creuse sous bruit
+re-choisi sur la validation propre, tous les modèles convergent vers une accuracy de 0,86 à 0,87 sur étiquettes
+propres. À architecture égale, la head évidentielle n'améliore ni ne dégrade la classification~: à chaque niveau de
+bruit, les accuracies moyennes des modèles softmax et EDL diffèrent d'au plus 0,03, bien en deçà de leur variabilité
+entre seeds (figure~\ref{fig:noise_all}). Le modèle évidentiel est en revanche systématiquement \textbf{mieux
+calibré}~: son ECE est plus faible aux six niveaux de bruit, et l'écart se creuse sous bruit
 (0,144 contre 0,174 sur étiquettes propres, 0,126 contre 0,206 à 20\,\% et 0,187 contre 0,241 à 40\,\% d'étiquettes
-inversées). Le terme KL, qui retire l'évidence non justifiée par les étiquettes, empêche la sur-confiance que l'entropie
-croisée induit sur les exemples contradictoires.
+inversées). Le terme KL, qui retire l'évidence non justifiée par les étiquettes, empêche l'overconfidence que la cross-entropy
+induit sur les exemples contradictoires.
 
 \input{tables_fr/tab_edl}
 
@@ -321,16 +321,33 @@ croisée induit sur les exemples contradictoires.
   \centering
   \includegraphics[width=\linewidth]{fig_noise_sweep_all}
   \caption{Modèles classiques de référence (pointillés, 5 tirages) contre CNN softmax et évidentiel (traits pleins,
-           3 graines) sous un bruit croissant sur les étiquettes minoritaires, au seuil de décision par défaut.}
+           3 seeds) sous un bruit croissant sur les étiquettes minoritaires, au seuil de décision par défaut.}
   \label{fig:noise_all}
 \end{figure}
+
+\subsection{Comparaison avec les benchmarks publiés}
+La table~\ref{tab:benchmark} situe nos résultats par rapport au benchmark officiel MedMNIST v2~\cite{yang2023medmnist},
+qui utilise les mêmes données, les mêmes splits disjoints par patient et les mêmes métriques de test (ROC-AUC et
+accuracy au seuil par défaut). À la résolution native $28\times28$, notre SVM RBF (ROC-AUC 0,947, accuracy 0,857) et
+notre CNN softmax (ROC-AUC 0,946$\pm$0,001) égalent les baselines ResNet-18 et ResNet-50 (0,944 à 0,948, accuracy 0,854)
+ainsi que les pipelines auto-sklearn et AutoKeras, alors que notre CNN n'a que 23\,650 paramètres (environ 11 millions pour ResNet-18) et que nos modèles
+classiques n'ont pas besoin de GPU. La head évidentielle conserve la qualité de classement de la head softmax
+(ROC-AUC 0,940$\pm$0,014). Deux écarts subsistent. D'abord, l'accuracy de nos CNN au seuil 0,5 est plus faible et
+instable d'une seed à l'autre, conséquence du décalage de prévalence discuté plus haut~; avec un seuil choisi sur la
+validation, elle atteint 0,86 à 0,87, mais cette étape ne fait pas partie du protocole du benchmark et est donnée à part.
+Ensuite, une résolution plus élevée ($224\times224$) et Google AutoML Vision (ROC-AUC 0,991, accuracy 0,946) restent
+nettement devant. Le benchmark ne rapporte ni la calibration, ni la robustesse au bruit d'étiquetage, ni la qualité de
+l'incertitude~: les principaux apports du modèle évidentiel n'ont donc pas d'équivalent publié sur ce jeu de données et
+ne sont comparés qu'à notre propre baseline softmax.
+
+\input{tables_fr/tab_benchmark}
 
 \subsection{À quoi sert l'incertitude évidentielle~?}
 La table~\ref{tab:uncertainty} et la figure~\ref{fig:uncertainty} évaluent l'incertitude elle-même.
 \emph{Renvoi des cas douteux.} Les deux scores d'incertitude séparent les prédictions erronées des prédictions correctes
-avec une AUROC d'environ 0,80 à 0,84, sans vainqueur constant. Pour la graine montrée à la
-figure~\ref{fig:uncertainty} (gauche), le modèle évidentiel conserve une meilleure exactitude à presque tous les taux de
-renvoi, en particulier lorsqu'il est entraîné avec 20\,\% de bruit~; avec trois graines, cette observation reste à
+avec une AUROC d'environ 0,80 à 0,84, sans vainqueur constant. Pour la seed montrée à la
+figure~\ref{fig:uncertainty} (gauche), le modèle évidentiel conserve une meilleure accuracy à presque tous les taux de
+renvoi, en particulier lorsqu'il est entraîné avec 20\,\% de bruit~; avec trois seeds, cette observation reste à
 confirmer sur davantage d'exécutions.
 \emph{Étiquettes d'entraînement inversées.} Avec 20\,\% des étiquettes normales inversées, l'incertitude place les
 images inversées au-dessus des autres avec une AUROC de 0,88 pour les deux modèles, et le désaccord entre la prédiction
@@ -339,7 +356,7 @@ images inversées au-dessus des autres avec une AUROC de 0,88 pour les deux mod�
 normales}~; c'est toute la classe contestée qui devient incertaine, et non chaque exemple inversé qui se distingue de
 ses pairs normaux. Le signal est donc utile pour orienter la ré-annotation vers la classe touchée plutôt que pour
 désigner chaque erreur.
-\emph{Images hors distribution.} Le $u$ évidentiel ne surpasse pas systématiquement l'entropie softmax~: il est moins
+\emph{Images OOD.} Le $u$ évidentiel ne surpasse pas systématiquement l'entropie softmax~: il est moins
 bon sur les échographies (0,763 contre 0,814 sur étiquettes propres), comparable sur les scanners, et meilleur sur les
 scanners seulement après un entraînement sur étiquettes bruitées (0,847 contre 0,795). La figure~\ref{fig:dirichlet}
 illustre ce qu'apporte la sortie de Dirichlet~: sur l'image de test où le modèle évidentiel est le plus indécis, le
@@ -352,9 +369,9 @@ avec $u=0{,}46$, c'est-à-dire «~je ne sais pas~» plutôt que «~pneumonie un 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig_uncertainty}
-  \caption{Gauche~: prédiction sélective, c'est-à-dire l'exactitude sur les cas conservés lorsque les images de test les
-           plus incertaines sont renvoyées à un expert (graine 0). Centre~: incertitude évidentielle des images
-           correctement classées, mal classées et hors distribution (entraînement propre). Droite~: incertitude
+  \caption{Gauche~: selective prediction, c'est-à-dire l'accuracy sur les cas conservés lorsque les images de test les
+           plus incertaines sont renvoyées à un expert (seed 0). Centre~: incertitude évidentielle des images
+           correctement classées, mal classées et OOD (entraînement propre). Droite~: incertitude
            évidentielle sur les images d'entraînement après inversion de 20\,\% des étiquettes normales.}
   \label{fig:uncertainty}
 \end{figure}
@@ -363,7 +380,7 @@ avec $u=0{,}46$, c'est-à-dire «~je ne sais pas~» plutôt que «~pneumonie un 
   \centering
   \includegraphics[width=0.92\linewidth]{fig_dirichlet}
   \caption{Sorties de Dirichlet (ici Beta, $K=2$) du CNN évidentiel pour une image de test certaine, l'image de test sur
-           laquelle il est le plus indécis et une échographie hors distribution, face à la prédiction ponctuelle du CNN
+           laquelle il est le plus indécis et une échographie OOD, face à la prédiction ponctuelle du CNN
            softmax de même architecture.}
   \label{fig:dirichlet}
 \end{figure}
@@ -375,16 +392,16 @@ Nos expériences séparent deux effets souvent confondus sous le terme de «~rob
 bruit conditionnel à la classe minoritaire, l'effet dominant est un \emph{décalage d'a priori}~: l'a priori de classe
 appris est surestimé, le classement est préservé, et le dommage est réparé en recalibrant un unique seuil sur des
 données de confiance. La régularisation, elle, s'attaque à la \emph{mémorisation}, qui n'est pas le mode de défaillance
-ici et aggrave même le décalage d'a priori. L'apprentissage évidentiel apporte un troisième bénéfice, orthogonal~: une
+ici et aggrave même le décalage d'a priori. L'Evidential Deep Learning apporte un troisième bénéfice, orthogonal~: une
 confiance calibrée et une masse d'ignorance explicite, qui rendent les défaillances du modèle plus visibles plutôt que
 moins fréquentes.
 
 Ces conclusions ont des limites. Les images font $28\times28$ pixels, ce qui avantage les modèles classiques et limite
 les CNN~; le bruit est synthétique et conditionnel à la classe, alors que les vraies erreurs d'annotation dépendent de
 l'image~; un seul jeu de données, présentant un net décalage de prévalence entre entraînement et test, est utilisé~; les
-CNN ont été entraînés avec trois graines sur CPU et présentent une forte variance~; enfin, la recalibration du seuil
+CNN ont été entraînés avec trois seeds sur CPU et présentent une forte variance~; enfin, la recalibration du seuil
 suppose un petit ensemble de validation propre, ressource réaliste mais non gratuite en pratique clinique. La détection
-hors distribution n'a été évaluée que sur deux autres modalités de MedMNIST.
+OOD n'a été évaluée que sur deux autres modalités de MedMNIST.
 
 % ======================================================================
 \section{Conclusion et perspectives}
@@ -393,22 +410,22 @@ Sur PneumoniaMNIST, l'inversion d'étiquettes de la classe minoritaire déplace 
 classifieurs classiques en laissant leur classement intact. Une régularisation plus forte n'aide pas, mais recalibrer le
 seuil sur un petit ensemble propre neutralise l'essentiel du dommage. Un CNN évidentiel classe aussi bien que son jumeau
 softmax, est mieux calibré sous bruit et exprime explicitement son ignorance, même si son incertitude n'est pas un
-détecteur fiable d'images hors distribution dans notre cadre. Vers une chaîne évidentielle complète, nous prévoyons
+détecteur fiable d'images OOD dans notre cadre. Vers un pipeline évidentiel complet, nous prévoyons
 (i)~d'utiliser l'incertitude évidentielle pour repondérer ou ré-étiqueter les exemples d'entraînement suspects plutôt que
 de seulement la rapporter~; (ii)~d'exploiter plusieurs annotateurs et les étiquettes explicitement \emph{incertaines} de
 CheXpert~\cite{irvin2019chexpert} en pleine résolution, où les modèles profonds ont un réel avantage~; (iii)~de combiner
-l'EDL avec une correction du décalage d'a priori et une calibration a posteriori~; et (iv)~de la comparer aux ensembles
-profonds et au dropout Monte-Carlo~\cite{lakshminarayanan2017simple,gal2016dropout} à budget de calcul égal.
+l'EDL avec une correction du décalage d'a priori et une calibration a posteriori~; et (iv)~de la comparer aux deep
+ensembles et au Monte-Carlo dropout~\cite{lakshminarayanan2017simple,gal2016dropout} à budget de calcul égal.
 
 \section*{Remerciements}
-Ce travail a été réalisé dans le cadre du Travail Pratique~4 du cours d'apprentissage automatique du Département de
+Ce travail a été réalisé dans le cadre du Travail Pratique~4 du cours de machine learning du Département de
 Génie Informatique de l'École Nationale Supérieure Polytechnique de Yaoundé (ENSPY), Université de Yaoundé~I, sous la
 supervision du Dr~Louis Fippo Fitime, de Claude Tinku et de Kerolle Sonfack.
 
 \section*{Disponibilité du code et des données}
 PneumoniaMNIST, OrganCMNIST et BreastMNIST sont disponibles publiquement via MedMNIST~\cite{yang2023medmnist}. Les quatre
 notebooks, le module partagé et la configuration MLflow qui produisent chaque nombre, table et figure de ce rapport sont
-fournis avec celui-ci~; tous les hyperparamètres ont été choisis sur la partition de validation et toutes les graines
+fournis avec celui-ci~; tous les hyperparamètres ont été choisis sur le split de validation et toutes les seeds
 aléatoires sont fixées.
 
 \bibliographystyle{plainnat}
@@ -429,25 +446,25 @@ aléatoires sont fixées.
   \centering
   \includegraphics[width=\linewidth]{fig_sga_scaling}
   \caption{Régression logistique sur 200\,000 exemples synthétiques. Gauche~: log-vraisemblance de validation en fonction
-           du nombre de passes sur les données~; les mises à jour stochastiques n'ont besoin que d'une fraction de passe,
-           la montée de gradient par lot de dizaines de passes. Droite~: temps réel~; la boucle Python exemple par exemple
-           paie le coût de l'interpréteur, le SGA par mini-lots cumule les deux avantages.}
+           du nombre d'epochs~; les mises à jour stochastiques n'ont besoin que d'une fraction d'epoch,
+           le batch gradient ascent de dizaines d'epochs. Droite~: temps d'exécution (wall-clock)~; la boucle Python exemple par exemple
+           paie le coût de l'interpréteur, le SGA par mini-batch cumule les deux avantages.}
   \label{fig:sga}
 \end{figure}
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{fig_logreg_proba}
-  \caption{Lecture probabiliste de la sigmoïde (régression logistique SGA, validation)~: log-cotes par classe, diagramme
-           de fiabilité et poids $\theta_j$ affichés comme une image.}
+  \caption{Lecture probabiliste de la sigmoïde (régression logistique SGA, validation)~: log-odds par classe, reliability
+           diagram et poids $\theta_j$ affichés comme une image.}
   \label{fig:logreg}
 \end{figure}
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{fig_knn}
-  \caption{$K$ plus proches voisins~: exactitude de validation en fonction de $K$~; concentration des distances sur des
-           données uniformes~; exactitude en fonction du nombre de composantes ACP. Les radiographies vivent sur une
+  \caption{$K$-Nearest Neighbors~: accuracy de validation en fonction de $K$~; concentration des distances sur des
+           données uniformes~; accuracy en fonction du nombre de composantes PCA. Les radiographies vivent sur une
            variété de faible dimension, si bien que KNN se dégrade bien moins que ne le suggère le cas uniforme.}
   \label{fig:knn}
 \end{figure}
@@ -465,7 +482,7 @@ aléatoires sont fixées.
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.6\linewidth]{fig_boosting}
-  \caption{Exactitude de validation en fonction du nombre d'itérations de boosting.}
+  \caption{Accuracy de validation en fonction du nombre d'itérations de boosting.}
   \label{fig:boosting}
 \end{figure}
 
@@ -473,9 +490,9 @@ aléatoires sont fixées.
   \centering
   \includegraphics[width=\linewidth]{fig_svm_margin}\\[4pt]
   \includegraphics[width=\linewidth]{fig_svm_C}
-  \caption{Machines à vecteurs de support. Haut~: SVM linéaire sur une projection 2D pour trois valeurs de $C$ (points
-           cerclés~: vecteurs supports~; tirets~: marge). Bas~: sur les 784 pixels, un petit $C$ donne une marge large et
-           beaucoup de vecteurs supports (forte régularisation), un grand $C$ une marge étroite qui colle à
+  \caption{Support Vector Machines. Haut~: SVM linéaire sur une projection 2D pour trois valeurs de $C$ (points
+           cerclés~: support vectors~; tirets~: marge). Bas~: sur les 784 pixels, un petit $C$ donne une marge large et
+           beaucoup de support vectors (forte régularisation), un grand $C$ une marge étroite qui colle à
            l'entraînement.}
   \label{fig:svm}
 \end{figure}
@@ -484,9 +501,9 @@ aléatoires sont fixées.
   \centering
   \includegraphics[width=0.62\linewidth]{fig_kernel_trick}\hfill
   \includegraphics[width=0.34\linewidth]{fig_svm_rbf_grid}
-  \caption{Gauche~: l'astuce du noyau, où des classes concentriques deviennent linéairement séparables après la
+  \caption{Gauche~: le kernel trick, où des classes concentriques deviennent linéairement séparables après la
            projection explicite $\varphi(x)=(x_1,x_2,x_1^2+x_2^2)$~; le noyau RBF le fait implicitement dans un espace de
-           dimension infinie. Droite~: exactitude de validation du SVM RBF selon $(C,\gamma)$.}
+           dimension infinie. Droite~: accuracy de validation du SVM RBF selon $(C,\gamma)$.}
   \label{fig:kernel}
 \end{figure}
 

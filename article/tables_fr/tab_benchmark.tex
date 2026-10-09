@@ -1,0 +1,31 @@
+\begin{table}[t]
+\centering
+\small
+\caption{Comparaison avec le benchmark officiel MedMNIST v2 sur le split de test de PneumoniaMNIST (624 images). Les
+valeurs publiées sont reprises de Yang \emph{et al.}~\cite{yang2023medmnist}~; le nombre entre parenthèses est la
+résolution d'entrée. Nos CNN~: moyenne$\pm$écart-type sur 3 seeds~; nos modèles classiques sont déterministes
+(une seule exécution). Acc.~: seuil par défaut de 0,5, comme dans le benchmark~; \emph{recal.}~: seuil re-choisi sur
+la validation (hors protocole du benchmark).}
+\label{tab:benchmark}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{llccc}
+\toprule
+Source & Modèle & ROC-AUC & Acc. & Acc. (recal.) \\
+\midrule
+MedMNIST v2~\cite{yang2023medmnist} & ResNet-18 (28) & 0,944 & 0,854 & n.d. \\
+ & ResNet-18 (224) & 0,956 & 0,864 & n.d. \\
+ & ResNet-50 (28) & 0,948 & 0,854 & n.d. \\
+ & ResNet-50 (224) & 0,962 & 0,884 & n.d. \\
+ & auto-sklearn & 0,942 & 0,855 & n.d. \\
+ & AutoKeras & 0,947 & 0,878 & n.d. \\
+ & Google AutoML Vision & \textbf{0,991} & \textbf{0,946} & n.d. \\
+\midrule
+Ce travail (28) & LogReg-SGA & 0,927 & 0,851 & n.d. \\
+ & SVM linéaire & 0,925 & 0,864 & n.d. \\
+ & SVM RBF & 0,947 & 0,857 & 0,872 \\
+ & CNN softmax & 0,946$\pm$0,001 & 0,779$\pm$0,067 & 0,869$\pm$0,010 \\
+ & CNN EDL & 0,940$\pm$0,014 & 0,761$\pm$0,084 & 0,860$\pm$0,011 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
